@@ -4,10 +4,12 @@ import type { PendingAttempt } from '../game/types'
 export function GradingPanel({
   pending,
   guesserName,
+  mySecret,
   onGrade,
 }: {
   pending: PendingAttempt
   guesserName: string
+  mySecret: string
   onGrade: (exact: number, misplaced: number) => void
 }) {
   const [exact, setExact] = useState(0)
@@ -18,6 +20,9 @@ export function GradingPanel({
     <div className="rounded-xl bg-indigo-500/10 border border-indigo-500 p-4 space-y-3" data-testid="grading-panel">
       <p className="text-sm text-indigo-300">
         {guesserName} intento: <span className="font-mono text-xl tracking-widest text-white">{pending.guess}</span>
+      </p>
+      <p className="text-xs text-slate-400" data-testid="grading-my-secret">
+        Tu secreto: <span className="font-mono text-lg tracking-widest text-emerald-400">{mySecret}</span>
       </p>
       <p className="text-xs text-slate-400">Compara con tu secreto y califica el intento.</p>
       <div className="grid grid-cols-2 gap-3">

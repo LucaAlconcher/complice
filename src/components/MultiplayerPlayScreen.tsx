@@ -59,6 +59,7 @@ export function MultiplayerPlayScreen({
         <GradingPanel
           pending={pendingForMe}
           guesserName={match.participants.find((p) => p.id === pendingForMe.guesserId)?.name ?? '???'}
+          mySecret={me.secret}
           onGrade={onGradeAttempt}
         />
       )}
