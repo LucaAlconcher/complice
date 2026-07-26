@@ -36,6 +36,7 @@ export function MultiplayerPlayScreen({
   const extraShot = match.round.phase === 'extra-shot'
   const starterName = match.participants.find((p) => p.id === match.round.starterId)?.name ?? '???'
   const currentTurnName = match.participants.find((p) => p.id === currentTurnId)?.name ?? '...'
+  const awaitingGrade = match.round.pendingAttempt?.guesserId === myId
 
   const submit = () => {
     if (!complete) return
@@ -63,7 +64,7 @@ export function MultiplayerPlayScreen({
       )}
 
       <div className="rounded-xl bg-slate-800 p-4 text-center space-y-3">
-        {isMyTurn ? (
+        {isMyTurn && !awaitingGrade ? (
           <>
             <p className="text-sm text-slate-400">
               Tu turno: adivina el secreto de {target.name} ({SECRET_LENGTH} {mode === 'word' ? 'letras' : 'digitos'})
@@ -88,7 +89,11 @@ export function MultiplayerPlayScreen({
           </>
         ) : (
           <p className="text-slate-400 py-6">
-            {pendingForMe ? 'Califica el intento de arriba para continuar.' : `Esperando el turno de ${currentTurnName}`}
+            {pendingForMe
+              ? 'Califica el intento de arriba para continuar.'
+              : awaitingGrade
+                ? `Esperando a que ${target.name} califique tu intento...`
+                : `Esperando el turno de ${currentTurnName}`}
           </p>
         )}
       </div>

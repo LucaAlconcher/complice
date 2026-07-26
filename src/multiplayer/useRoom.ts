@@ -21,6 +21,25 @@ function upsertById<T extends { id: string }>(list: T[], eventType: string, newR
   return copy
 }
 
+// Module-level singleton so signInAnonymously() fires exactly once per page load, even
+// though React 18 StrictMode double-invokes effects in dev (two concurrent sign-ins would
+// otherwise race: whichever resolves last becomes the client's active session, which can
+// end up out of sync with whichever call's result got stored in component state).
+let anonymousAuthPromise: Promise<string | null> | null = null
+
+function ensureAnonymousAuth(): Promise<string | null> {
+  if (!anonymousAuthPromise) {
+    anonymousAuthPromise = (async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (sessionData.session?.user) return sessionData.session.user.id
+      const { data, error: signInError } = await supabase.auth.signInAnonymously()
+      if (signInError) throw signInError
+      return data.user?.id ?? null
+    })()
+  }
+  return anonymousAuthPromise
+}
+
 export function useRoom() {
   const [myUserId, setMyUserId] = useState<string | null>(null)
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null)
@@ -35,19 +54,13 @@ export function useRoom() {
   // Anonymous session: gives every browser tab a stable uid without asking for a login.
   useEffect(() => {
     let mounted = true
-    ;(async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      if (sessionData.session?.user) {
-        if (mounted) setMyUserId(sessionData.session.user.id)
-        return
-      }
-      const { data, error: signInError } = await supabase.auth.signInAnonymously()
-      if (signInError) {
-        setError(`No se pudo conectar: ${signInError.message}`)
-        return
-      }
-      if (mounted) setMyUserId(data.user?.id ?? null)
-    })()
+    ensureAnonymousAuth()
+      .then((uid) => {
+        if (mounted) setMyUserId(uid)
+      })
+      .catch((signInError: Error) => {
+        if (mounted) setError(`No se pudo conectar: ${signInError.message}`)
+      })
     return () => {
       mounted = false
     }
@@ -58,7 +71,7 @@ export function useRoom() {
     if (!roomId) return
     let cancelled = false
 
-    ;(async () => {
+    const fetchAll = async () => {
       const [roomRes, playersRes, roundRes, attemptsRes] = await Promise.all([
         supabase.from('rooms').select('*').eq('id', roomId).single(),
         supabase.from('room_players').select('*').eq('room_id', roomId).order('joined_at'),
@@ -70,7 +83,18 @@ export function useRoom() {
       if (playersRes.data) setPlayers(playersRes.data as RoomPlayerRow[])
       if (roundRes.data) setRoundRow(roundRes.data as RoundStateRow)
       if (attemptsRes.data) setAttempts(attemptsRes.data as AttemptRow[])
-    })()
+    }
+
+    fetchAll()
+
+    // Realtime can silently miss updates (mobile tab backgrounded/throttled, brief disconnects),
+    // so poll as a fallback and force a refetch whenever the tab regains focus/visibility.
+    const pollInterval = setInterval(fetchAll, 4000)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchAll()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('focus', onVisibilityChange)
 
     const channel = supabase
       .channel(`room:${roomId}`)
@@ -112,6 +136,9 @@ export function useRoom() {
 
     return () => {
       cancelled = true
+      clearInterval(pollInterval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', onVisibilityChange)
       supabase.removeChannel(channel)
     }
   }, [roomId])
@@ -144,7 +171,13 @@ export function useRoom() {
     if (players.length < 2) return
     const allReady = players.every((p) => p.secret_ready_round === roundRow.round_number)
     if (allReady) {
-      supabase.from('round_state').update({ phase: 'playing', current_turn_index: 0 }).eq('room_id', roomId)
+      supabase
+        .from('round_state')
+        .update({ phase: 'playing', current_turn_index: 0 })
+        .eq('room_id', roomId)
+        .then(({ error: updateError }) => {
+          if (updateError) console.error('Failed to advance round to playing:', updateError)
+        })
     }
   }, [players, roundRow, roomId])
 
@@ -290,6 +323,7 @@ export function useRoom() {
   async function forfeitMyTurn() {
     if (!roomId || !roundRow || !myPlayerId || !match) return
     if (currentTurnParticipantId(match) !== myPlayerId) return
+    if (match.round.pendingAttempt) return
     const next = forfeitTurnEngine(match, myPlayerId)
     await supabase
       .from('round_state')

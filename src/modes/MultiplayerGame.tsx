@@ -16,11 +16,13 @@ export function MultiplayerGame({ onExit }: { onExit: () => void }) {
   const currentTurnId = mp.match ? currentTurnParticipantId(mp.match) : null
   const isMyTurn = currentTurnId !== null && currentTurnId === mp.myPlayerId
 
-  // Local per-turn countdown; resets whenever the shared turn state changes, forfeits only when it's my turn.
+  // Local per-turn countdown; resets whenever the shared turn state changes, forfeits only when it's my turn
+  // and I haven't already submitted a guess that's waiting to be graded (pendingAttempt pauses the clock).
   useEffect(() => {
     if (!mp.match || !mp.myPlayerId) return
     if (mp.match.round.phase !== 'playing' && mp.match.round.phase !== 'extra-shot') return
     if (currentTurnParticipantId(mp.match) !== mp.myPlayerId) return
+    if (mp.match.round.pendingAttempt) return
 
     setTimeLeftMs(TURN_TIME_LIMIT_MS)
     const startedAt = Date.now()
@@ -35,7 +37,13 @@ export function MultiplayerGame({ onExit }: { onExit: () => void }) {
     }, 250)
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mp.match?.round.currentTurnIndex, mp.match?.round.phase, mp.match?.round.extraShotQueue.length, mp.myPlayerId])
+  }, [
+    mp.match?.round.currentTurnIndex,
+    mp.match?.round.phase,
+    mp.match?.round.extraShotQueue.length,
+    mp.match?.round.pendingAttempt,
+    mp.myPlayerId,
+  ])
 
   async function handleCreate(name: string, mode: GameMode) {
     try {
