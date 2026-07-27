@@ -1,3 +1,172 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* =========================================================
+   Modo Papel: hoja de anotador + lapicera
+   ========================================================= */
+
+html.theme-paper {
+  font-family: 'Kalam', 'Comic Sans MS', cursive;
+}
+
+html.theme-paper .font-mono {
+  font-family: 'Kalam', 'Comic Sans MS', cursive;
+}
+
+html.theme-paper body {
+  background-color: #eaeee0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 33px,
+    rgba(70, 100, 130, 0.28) 34px
+  );
+  min-height: 100vh;
+}
+
+/* Espiral de agujeros de anotador + margen rojo, fijos a la izquierda */
+html.theme-paper body::before {
+  content: '';
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 34px;
+  background-color: #dee4d0;
+  background-image: radial-gradient(circle at 17px 22px, rgba(31, 42, 68, 0.28) 0 6px, transparent 7px);
+  background-repeat: repeat-y;
+  background-size: 100% 42px;
+  border-right: 2px solid rgba(196, 64, 64, 0.5);
+  pointer-events: none;
+  z-index: 0;
+}
+
+html.theme-paper #root {
+  position: relative;
+  z-index: 1;
+  padding-left: 34px;
+}
+
+@media (max-width: 640px) {
+  html.theme-paper body::before {
+    width: 22px;
+  }
+  html.theme-paper #root {
+    padding-left: 22px;
+  }
+}
+
+/* Fondos de pantalla completa (contenedores raiz) -> se ve el papel debajo */
+html.theme-paper .bg-slate-950 {
+  background-color: transparent;
+}
+
+/* Tarjetas, inputs y superficies -> hoja de papel */
+html.theme-paper .bg-slate-900,
+html.theme-paper .bg-slate-800,
+html.theme-paper .bg-slate-700 {
+  background-color: #faf8ee;
+  border: 1px solid rgba(31, 42, 68, 0.22);
+  box-shadow: 1px 2px 0 rgba(31, 42, 68, 0.08);
+}
+
+html.theme-paper .disabled\:bg-slate-700:disabled {
+  background-color: #e4e2d4;
+  border-color: rgba(31, 42, 68, 0.15);
+  box-shadow: none;
+}
+
+/* Texto -> tinta */
+html.theme-paper .text-white {
+  color: #1f2a44;
+}
+html.theme-paper .text-slate-200 {
+  color: #2a3652;
+}
+html.theme-paper .text-slate-300 {
+  color: #364268;
+}
+html.theme-paper .text-slate-400 {
+  color: #4b5878;
+}
+html.theme-paper .text-slate-500,
+html.theme-paper .disabled\:text-slate-500:disabled {
+  color: #6b7691;
+}
+html.theme-paper .hover\:text-slate-200:hover {
+  color: #1f2a44;
+}
+
+/* Boton principal (verde) -> tinta azul de lapicera */
+html.theme-paper .bg-emerald-600 {
+  background-color: #274690;
+  color: #f7f6ee;
+  box-shadow: 1px 2px 0 rgba(31, 42, 68, 0.25);
+}
+html.theme-paper .hover\:bg-emerald-500:hover {
+  background-color: #32569f;
+}
+html.theme-paper .bg-emerald-500 {
+  background-color: #2f6b3a;
+}
+html.theme-paper .text-emerald-400 {
+  color: #256b33;
+}
+html.theme-paper .bg-emerald-600\/20 {
+  background-color: rgba(39, 107, 51, 0.16);
+}
+html.theme-paper .ring-emerald-500,
+html.theme-paper .focus\:ring-emerald-500:focus {
+  --tw-ring-color: #274690;
+}
+
+/* Boton secundario / multijugador (indigo) -> tinta violeta */
+html.theme-paper .bg-indigo-600 {
+  background-color: #5a3a9c;
+  color: #f7f6ee;
+  box-shadow: 1px 2px 0 rgba(31, 42, 68, 0.25);
+}
+html.theme-paper .hover\:bg-indigo-500:hover {
+  background-color: #6a48ae;
+}
+html.theme-paper .bg-indigo-500 {
+  background-color: #5a3a9c;
+}
+html.theme-paper .text-indigo-300,
+html.theme-paper .text-indigo-400 {
+  color: #5a3a9c;
+}
+html.theme-paper .ring-indigo-500,
+html.theme-paper .focus\:ring-indigo-500:focus {
+  --tw-ring-color: #5a3a9c;
+}
+html.theme-paper .bg-indigo-500\/10 {
+  background-color: rgba(90, 58, 156, 0.08);
+}
+
+/* Resaltador (amber) -> marcador fluo sobre papel */
+html.theme-paper .bg-amber-500 {
+  background-color: #f5c518;
+  color: #4a3800;
+}
+html.theme-paper .bg-amber-500\/20 {
+  background-color: rgba(217, 166, 0, 0.22);
+}
+html.theme-paper .text-amber-300,
+html.theme-paper .text-amber-400 {
+  color: #8a6300;
+}
+html.theme-paper .border-amber-500 {
+  border-color: #d9a600;
+}
+
+/* Errores -> tinta roja */
+html.theme-paper .text-red-400 {
+  color: #b3261e;
+}
+
+/* El boton de cambio de tema, siempre legible */
+html.theme-paper [data-testid='theme-toggle'] {
+  background-color: #faf8ee;
+  border-color: rgba(31, 42, 68, 0.3);
+  color: #1f2a44;
+}
